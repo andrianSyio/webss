@@ -1,10 +1,11 @@
 {
   "name": "vercel-screenshot-api",
   "version": "1.0.0",
-  "description": "API Screenshot Web dengan Playwright di Vercel",
+  "description": "API Screenshot Web dengan Playwright dan @sparticuz/chromium di Vercel",
   "main": "api/screenshot.js",
   "dependencies": {
-    "playwright-aws-lambda": "^0.10.0",
+    "@sparticuz/chromium": "^121.0.0", 
     "playwright-core": "^1.44.1" 
+    /* Catatan: 'playwright-aws-lambda' sudah dihapus dari sini */
   }
 }
