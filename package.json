@@ -1,14 +1,12 @@
 {
-  "name": "webss",
+  "name": "screenshot-webapp",
   "version": "1.0.0",
   "type": "module",
-  "main": "api/screenshot.js",
   "scripts": {
     "start": "node api/screenshot.js"
   },
   "dependencies": {
-    "@sparticuz/chromium": "^127.0.0",
-    "puppeteer-core": "^22.15.0"
+    "puppeteer": "^24.1.0"
   },
   "engines": {
     "node": "22.x"
