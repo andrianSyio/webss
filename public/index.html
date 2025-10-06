@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Screenshot API Demo</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:24px}
+    input,button{padding:8px 10px;font-size:16px}
+    img{max-width:100%;border:1px solid #ddd;margin-top:12px}
+  </style>
+</head>
+<body>
+  <h1>Screenshot API Demo</h1>
+  <label>
+    URL:
+    <input id="url" style="width:60%" value="https://google.com" />
+  </label>
+  <label>
+    Width:
+    <input id="w" style="width:80px" value="1280" />
+  </label>
+  <label>
+    Height:
+    <input id="h" style="width:80px" value="720" />
+  </label>
+  <button id="go">Capture</button>
+
+  <div id="result"></div>
+
+  <script>
+    document.getElementById('go').addEventListener('click', async () => {
+      const url = encodeURIComponent(document.getElementById('url').value);
+      const w = document.getElementById('w').value;
+      const h = document.getElementById('h').value;
+      const api = `/api/screenshot?url=${url}&width=${w}&height=${h}&fullPage=false`;
+      const r = document.getElementById('result');
+      r.innerHTML = 'Loading...';
+      try {
+        const resp = await fetch(api);
+        if (!resp.ok) {
+          const json = await resp.json();
+          r.innerHTML = 'Error: ' + (json && json.error ? json.error : resp.statusText);
+          return;
+        }
+        const blob = await resp.blob();
+        const imgURL = URL.createObjectURL(blob);
+        r.innerHTML = `<img src="${imgURL}" alt="screenshot" />`;
+      } catch (e) {
+        r.innerText = 'Fetch error: ' + e.message;
+      }
+    });
+  </script>
+</body>
+</html>
