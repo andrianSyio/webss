@@ -1,14 +1,10 @@
 {
-  "name": "screenshot-webapp",
+  "name": "vercel-screenshot-api",
   "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "start": "node api/screenshot.js"
-  },
+  "description": "API Screenshot Web dengan Playwright di Vercel",
+  "main": "api/screenshot.js",
   "dependencies": {
-    "puppeteer": "^24.1.0"
-  },
-  "engines": {
-    "node": "22.x"
+    "playwright-aws-lambda": "^0.10.0",
+    "playwright-core": "^1.44.1" 
   }
 }
