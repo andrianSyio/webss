@@ -1,55 +1,186 @@
 <!doctype html>
-<html>
+<html lang="id">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Screenshot API Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WebSS — Screenshot API</title>
+  <meta name="description" content="UI untuk mengambil screenshot website via API" />
   <style>
-    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:24px}
-    input,button{padding:8px 10px;font-size:16px}
-    img{max-width:100%;border:1px solid #ddd;margin-top:12px}
+    :root{
+      --bg:#f6f7fb; --card:#ffffff; --muted:#98a0b3; --accent:#7fb3d5; --accent-2:#b7d7e8; --success:#7ad29f;
+      --glass: rgba(255,255,255,0.7);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,var(--bg),#eef3f8);min-height:100vh;color:#223;display:flex;align-items:center;justify-content:center;padding:20px}
+    .wrap{width:100%;max-width:460px}
+
+    .brand{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+    .logo{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px;box-shadow:0 6px 18px rgba(123,150,180,0.12)}
+    h1{margin:0;font-size:18px}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    .card{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 6px 20px rgba(30,40,60,0.06);}
+
+    .form-row{display:flex;gap:10px;margin-bottom:10px}
+    .input{flex:1;padding:12px 14px;border-radius:10px;border:1px solid #e6eaf0;background:var(--glass);outline:none;font-size:14px}
+    .small{width:92px}
+    .btn{padding:10px 14px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;font-weight:600;cursor:pointer;box-shadow:0 8px 20px rgba(127,179,213,0.18)}
+    .btn.ghost{background:transparent;color:var(--accent);box-shadow:none;border:1px dashed rgba(127,179,213,0.18)}
+
+    .options{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    .chip{padding:8px 10px;border-radius:999px;background:#f3f6fa;border:1px solid #eef3f8;font-size:13px;color:var(--muted)}
+
+    .preview{margin-top:12px;border-radius:12px;overflow:hidden;border:1px solid #e9eef6;background:#fff}
+    .preview img{display:block;width:100%;height:auto}
+    .meta{display:flex;justify-content:space-between;align-items:center;padding:10px 12px}
+    .meta .left{font-size:13px;color:var(--muted)}
+    .meta .right{display:flex;gap:8px}
+
+    .history{margin-top:12px}
+    .history h3{margin:0 0 8px 0;font-size:14px}
+    .list{display:flex;flex-direction:column;gap:8px}
+    .item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:linear-gradient(180deg,#fff,#fbfdff);border:1px solid #eef3f8}
+    .thumb{width:56px;height:36px;background:#f4f7fb;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px}
+    .itext{flex:1}
+    .itag{font-size:12px;color:var(--muted)}
+
+    .foot{margin-top:14px;text-align:center;color:var(--muted);font-size:13px}
+
+    /* responsive */
+    @media (max-width:420px){.wrap{padding:0 6px}}
   </style>
 </head>
 <body>
-  <h1>Screenshot API Demo</h1>
-  <label>
-    URL:
-    <input id="url" style="width:60%" value="https://google.com" />
-  </label>
-  <label>
-    Width:
-    <input id="w" style="width:80px" value="1280" />
-  </label>
-  <label>
-    Height:
-    <input id="h" style="width:80px" value="720" />
-  </label>
-  <button id="go">Capture</button>
+  <div class="wrap">
+    <div class="brand">
+      <div class="logo">WS</div>
+      <div>
+        <h1>WebSS — Screenshot API</h1>
+        <p class="lead">Ambil screenshot halaman web — cepat, rapi, dan hemat data</p>
+      </div>
+    </div>
 
-  <div id="result"></div>
+    <div class="card">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+        <input id="url" class="input" placeholder="https://example.com" value="https://google.com" />
+        <button id="go" class="btn">Capture</button>
+      </div>
+
+      <div class="options">
+        <input id="width" class="input small" placeholder="width" value="1280" />
+        <input id="height" class="input small" placeholder="height" value="720" />
+        <label class="chip" style="display:flex;align-items:center;gap:8px"><input id="fullPage" type="checkbox" style="width:16px;height:16px"/> Full</label>
+        <select id="format" class="chip" style="border-radius:10px;padding:8px 10px;background:#f7fbff;border:1px solid #eef6fb">
+          <option value="png">PNG</option>
+          <option value="jpeg">JPEG</option>
+        </select>
+        <button id="downloadAll" class="btn ghost" style="margin-left:auto">Download Recent</button>
+      </div>
+
+      <div id="previewArea" class="preview" style="min-height:180px;display:flex;align-items:center;justify-content:center;padding:18px;color:var(--muted)">No screenshot yet — tekan "Capture"</div>
+
+      <div class="meta">
+        <div class="left">Status: <span id="status">idle</span></div>
+        <div class="right">
+          <button id="copyUrl" class="chip">Copy API</button>
+          <button id="clearHistory" class="chip">Clear</button>
+        </div>
+      </div>
+
+      <div class="history">
+        <h3>History</h3>
+        <div id="list" class="list"></div>
+      </div>
+
+    </div>
+
+    <div class="foot">Built for Vercel • Node 22 • Simple & soft UI</div>
+  </div>
 
   <script>
-    document.getElementById('go').addEventListener('click', async () => {
-      const url = encodeURIComponent(document.getElementById('url').value);
-      const w = document.getElementById('w').value;
-      const h = document.getElementById('h').value;
-      const api = `/api/screenshot?url=${url}&width=${w}&height=${h}&fullPage=false`;
-      const r = document.getElementById('result');
-      r.innerHTML = 'Loading...';
-      try {
-        const resp = await fetch(api);
-        if (!resp.ok) {
-          const json = await resp.json();
-          r.innerHTML = 'Error: ' + (json && json.error ? json.error : resp.statusText);
+    // Simple client to call /api/screenshot?url=...
+    const $ = id => document.getElementById(id);
+    const listEl = $('list');
+    const preview = $('previewArea');
+    const statusEl = $('status');
+
+    let history = [];
+
+    function setStatus(t){statusEl.innerText = t}
+
+    function renderHistory(){
+      listEl.innerHTML = '';
+      history.slice().reverse().forEach((h, i) => {
+        const it = document.createElement('div'); it.className = 'item';
+        const thumb = document.createElement('div'); thumb.className='thumb';
+        thumb.innerText = 'IMG';
+        const itext = document.createElement('div'); itext.className='itext';
+        itext.innerHTML = `<div style="font-weight:600">${h.title}</div><div class='itag'>${h.url}</div>`;
+        const dl = document.createElement('a'); dl.className='chip'; dl.textContent='Open'; dl.href = h.blobUrl; dl.target='_blank';
+        it.appendChild(thumb); it.appendChild(itext); it.appendChild(dl);
+        listEl.appendChild(it);
+      });
+    }
+
+    async function capture(){
+      const url = $('url').value.trim();
+      if(!url){alert('Masukkan URL');return}
+      const width = $('width').value || '1280';
+      const height = $('height').value || '720';
+      const fullPage = $('fullPage').checked;
+      const format = $('format').value;
+      const api = `/api/screenshot?url=${encodeURIComponent(url)}&width=${width}&height=${height}&fullPage=${fullPage}&format=${format}`;
+
+      setStatus('loading...');
+      preview.innerHTML = 'Loading…';
+
+      try{
+        const res = await fetch(api);
+        if(!res.ok){
+          const j = await res.json().catch(()=>null);
+          setStatus('error');
+          preview.innerText = j && j.error ? `Error: ${j.error}` : `Request failed (${res.status})`;
           return;
         }
-        const blob = await resp.blob();
-        const imgURL = URL.createObjectURL(blob);
-        r.innerHTML = `<img src="${imgURL}" alt="screenshot" />`;
-      } catch (e) {
-        r.innerText = 'Fetch error: ' + e.message;
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        preview.innerHTML = `<img src="${blobUrl}" alt="screenshot">`;
+
+        // save history
+        history.push({title: new Date().toLocaleString(), url, blobUrl});
+        if(history.length>6) history.shift();
+        renderHistory();
+
+        setStatus('done');
+      }catch(err){
+        console.error(err);
+        setStatus('error');
+        preview.innerText = 'Network error: ' + err.message;
       }
+    }
+
+    $('go').addEventListener('click', capture);
+    $('url').addEventListener('keydown', e=>{if(e.key==='Enter') capture()});
+    $('clearHistory').addEventListener('click', ()=>{history=[];renderHistory();});
+    $('copyUrl').addEventListener('click', ()=>{
+      const url = $('url').value.trim();
+      const w = $('width').value; const h = $('height').value; const fullPage = $('fullPage').checked; const f = $('format').value;
+      const api = `${location.origin}/api/screenshot?url=${encodeURIComponent(url)}&width=${w}&height=${h}&fullPage=${fullPage}&format=${f}`;
+      navigator.clipboard.writeText(api).then(()=>{
+        setStatus('API copied');
+        setTimeout(()=>setStatus('idle'),1500);
+      });
     });
+
+    $('downloadAll').addEventListener('click', ()=>{
+      history.forEach((h, i)=>{
+        const a = document.createElement('a'); a.href = h.blobUrl; a.download = `screenshot-${i}.png`; document.body.appendChild(a); a.click(); a.remove();
+      });
+    });
+
+    // initial render
+    renderHistory();
   </script>
 </body>
 </html>
