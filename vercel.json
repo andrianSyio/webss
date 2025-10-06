@@ -1,8 +1,13 @@
 {
+  "version": 2,
   "functions": {
     "api/screenshot.js": {
-      "memory": 1024,
-      "maxDuration": 15
+      "memory": 1536,
+      "maxDuration": 30
     }
-  }
+  },
+  "routes": [
+    { "src": "/", "dest": "/public/index.html" },
+    { "src": "/api/(.*)", "dest": "/api/$1" }
+  ]
 }
