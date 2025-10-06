@@ -1,58 +1,66 @@
-// File: api/screenshot.js
+// api/screenshot.js
+const puppeteer = require('puppeteer');
 
-const { chromium } = require('playwright-core');
-const sparticuzChromium = require('@sparticuz/chromium'); 
-
-// Handler utama untuk Vercel Serverless Function
 module.exports = async (req, res) => {
-    const targetUrl = req.query.url;
-    res.setHeader('Content-Type', 'image/png');
+  const query = req.query || {};
+  const targetUrl = query.url || query.u;
+  if (!targetUrl) {
+    return res.status(400).json({ error: 'Missing ?url parameter. Example: /api/screenshot?url=https://example.com' });
+  }
+  if (!/^https?:\/\//i.test(targetUrl)) {
+    return res.status(400).json({ error: 'URL must start with http:// or https://' });
+  }
 
-    if (!targetUrl) {
-        res.status(400).send('Parameter "url" wajib disertakan. Contoh: /api/screenshot?url=https://example.com');
-        return;
+  const width = parseInt(query.width, 10) || 1280;
+  const height = parseInt(query.height, 10) || 720;
+  const fullPage = String(query.fullPage || 'false').toLowerCase() === 'true';
+  const delay = parseInt(query.delay, 10) || 0;
+  const format = (query.format || 'png').toLowerCase() === 'jpeg' ? 'jpeg' : 'png';
+  const quality = query.quality ? Math.min(100, Math.max(1, parseInt(query.quality, 10))) : undefined;
+
+  let browser;
+  try {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--single-process',
+        '--no-zygote'
+      ],
+      defaultViewport: { width, height }
+    });
+
+    const page = await browser.newPage();
+    // set a common user agent to avoid some bot blocks
+    await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36');
+
+    // navigate
+    await page.goto(targetUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+
+    if (delay > 0) await page.waitForTimeout(delay);
+
+    const screenshotOptions = {
+      type: format,
+      fullPage: fullPage
+    };
+    if (format === 'jpeg' && quality) screenshotOptions.quality = quality;
+
+    const buffer = await page.screenshot(screenshotOptions);
+
+    // headers
+    res.setHeader('Content-Type', format === 'jpeg' ? 'image/jpeg' : 'image/png');
+    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');
+
+    res.status(200).send(buffer);
+  } catch (err) {
+    console.error('Screenshot Error:', err);
+    // Provide limited info to client but log stack on server (console)
+    res.status(500).json({ error: 'Failed to capture screenshot', message: err.message });
+  } finally {
+    if (browser) {
+      try { await browser.close(); } catch (e) { /* ignore */ }
     }
-
-    let browser;
-    let screenshot;
-
-    try {
-        const executablePath = await sparticuzChromium.executablePath();
-
-        // 2. Luncurkan browser Chromium
-        browser = await chromium.launch({
-            executablePath: executablePath,
-            // PERBAIKAN FINAL: Menggunakan argumen minimal yang direkomendasikan
-            // untuk menghindari masalah shared library (libnspr4.so dll)
-            args: sparticuzChromium.args, // Hanya menggunakan array args default dari library
-            headless: true, 
-        });
-
-        const page = await browser.newPage();
-        
-        // Mengatur resolusi layar simulasi
-        await page.setViewportSize({ width: 1280, height: 720 });
-
-        // Navigasi ke URL (Timeout 20 detik)
-        await page.goto(targetUrl, {
-             waitUntil: 'networkidle', 
-             timeout: 20000 
-        });
-
-        // Ambil screenshot halaman penuh
-        screenshot = await page.screenshot({ 
-            type: 'png',
-            fullPage: true
-        });
-
-        res.status(200).send(screenshot);
-
-    } catch (error) {
-        console.error('Error saat mengambil screenshot:', error);
-        res.status(500).send(`Gagal mengambil screenshot: Pastikan URL valid. Detail Error: ${error.message}`);
-    } finally {
-        if (browser) {
-            await browser.close();
-        }
-    }
+  }
 };
