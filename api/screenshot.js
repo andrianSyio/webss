@@ -1,38 +1,77 @@
-import puppeteer from "puppeteer";
+// File: api/screenshot.js
 
-export default async function handler(req, res) {
-  const { url, width, height, fullPage, format } = req.query;
-  if (!url) {
-    return res.status(400).json({
-      error: "Masukkan parameter ?url=https://contoh.com"
-    });
-  }
+const { chromium } = require('playwright-core');
 
-  try {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
-    });
+// PERBAIKAN FINAL untuk mengatasi TypeError: getExecutablePath is not a function
+const playwrightLambda = require('playwright-aws-lambda');
+const getExecutablePath = playwrightLambda.getExecutablePath || (playwrightLambda.default && playwrightLambda.default.getExecutablePath);
 
-    const page = await browser.newPage();
-    await page.setViewport({
-      width: parseInt(width) || 1280,
-      height: parseInt(height) || 720
-    });
 
-    await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
+// Handler utama untuk Vercel Serverless Function
+module.exports = async (req, res) => {
+    const targetUrl = req.query.url;
+    res.setHeader('Content-Type', 'image/png');
 
-    const image = await page.screenshot({
-      type: format === "jpeg" ? "jpeg" : "png",
-      fullPage: fullPage === "true"
-    });
+    // --- Validasi Input ---
+    if (!targetUrl) {
+        res.status(400).send('Parameter "url" wajib disertakan. Contoh: /api/screenshot?url=https://example.com');
+        return;
+    }
+    
+    // Validasi kritis: Pastikan fungsi Chromium tersedia sebelum mencoba meluncurkannya
+    if (!getExecutablePath) {
+        console.error("KRITIS: Fungsi getExecutablePath tidak dapat ditemukan. Cek instalasi playwright-aws-lambda.");
+        res.status(500).send("Kesalahan konfigurasi: Fungsi vital untuk menjalankan Chromium tidak ditemukan.");
+        return;
+    }
 
-    await browser.close();
+    let browser;
+    let screenshot;
 
-    res.setHeader("Content-Type", `image/${format === "jpeg" ? "jpeg" : "png"}`);
-    res.send(image);
-  } catch (error) {
-    console.error("Screenshot Error:", error);
-    res.status(500).json({ error: error.message });
-  }
-}
+    try {
+        // 1. Panggil fungsi getExecutablePath
+        const executablePath = await getExecutablePath();
+
+        // 2. Luncurkan browser Chromium
+        browser = await chromium.launch({
+            executablePath,
+            // Argumen ini sangat penting untuk kompatibilitas lingkungan Serverless
+            args: [
+                ...chromium.args, 
+                '--no-sandbox', 
+                '--disable-setuid-sandbox', 
+                '--single-process', 
+                '--no-zygote'
+            ],
+            headless: chromium.headless,
+        });
+
+        const page = await browser.newPage();
+        await page.setViewportSize({ width: 1280, height: 720 });
+
+        // Navigasi ke URL (dengan timeout 15 detik)
+        await page.goto(targetUrl, {
+             waitUntil: 'networkidle', 
+             timeout: 15000 
+        });
+
+        // Ambil screenshot halaman penuh
+        screenshot = await page.screenshot({ 
+            type: 'png',
+            fullPage: true
+        });
+
+        // Kirim screenshot sebagai respons sukses (200 OK)
+        res.status(200).send(screenshot);
+
+    } catch (error) {
+        // Tangani error dan kirimkan respons 500
+        console.error('Error saat mengambil screenshot:', error);
+        res.status(500).send(`Gagal mengambil screenshot: Pastikan URL valid. Detail Error: ${error.message}`);
+    } finally {
+        // Pastikan browser ditutup
+        if (browser) {
+            await browser.close();
+        }
+    }
+};
