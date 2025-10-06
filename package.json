@@ -1,15 +1,16 @@
 {
-  "name": "vercel-screenshot-api",
+  "name": "webss",
   "version": "1.0.0",
-  "private": true,
-  "engines": {
-    "node": "22.x"
-  },
+  "main": "api/screenshot.js",
+  "type": "module",
   "scripts": {
-    "start": "vercel dev"
+    "start": "node api/screenshot.js"
   },
   "dependencies": {
-    "@sparticuz/chromium": "^126.0.0",
+    "@sparticuz/chromium": "^127.0.0",
     "puppeteer-core": "^22.15.0"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }
