@@ -22,23 +22,24 @@ module.exports = async (req, res) => {
         // 2. Luncurkan browser Chromium
         browser = await chromium.launch({
             executablePath: executablePath,
-            args: [
-                ...sparticuzChromium.args, 
-                '--no-sandbox' // Argumen ini harus ada
-            ],
-            // PERBAIKAN: SET HEADLESS KE BOOLEAN TRUE SECARA EKSPLISIT
+            // PERBAIKAN FINAL: Menggunakan argumen minimal yang direkomendasikan
+            // untuk menghindari masalah shared library (libnspr4.so dll)
+            args: sparticuzChromium.args, // Hanya menggunakan array args default dari library
             headless: true, 
         });
 
         const page = await browser.newPage();
+        
+        // Mengatur resolusi layar simulasi
         await page.setViewportSize({ width: 1280, height: 720 });
 
-        // Navigasi ke URL (dengan timeout 20 detik)
+        // Navigasi ke URL (Timeout 20 detik)
         await page.goto(targetUrl, {
              waitUntil: 'networkidle', 
              timeout: 20000 
         });
 
+        // Ambil screenshot halaman penuh
         screenshot = await page.screenshot({ 
             type: 'png',
             fullPage: true
