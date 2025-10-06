@@ -1,32 +1,30 @@
-import chromium from "@sparticuz/chromium";
+import chromium from "@sparticuz/chromium-min";
 import puppeteer from "puppeteer-core";
 
 export default async function handler(req, res) {
   const { url } = req.query;
-  if (!url) return res.status(400).send("Masukkan parameter ?url=");
+  if (!url) return res.status(400).send("Masukkan parameter ?url=https://...");
 
   try {
-    // Launch Chromium (works in Vercel)
+    const executablePath = await chromium.executablePath();
+
     const browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath:
-        process.env.AWS_EXECUTION_ENV || process.env.VERCEL
-          ? await chromium.executablePath()
-          : puppeteer.executablePath(),
+      executablePath,
       headless: chromium.headless,
     });
 
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
 
-    const screenshot = await page.screenshot({ type: "png" });
+    const image = await page.screenshot({ type: "png", fullPage: true });
     await browser.close();
 
     res.setHeader("Content-Type", "image/png");
-    res.send(screenshot);
-  } catch (error) {
-    console.error("Screenshot Error:", error);
-    res.status(500).send("Gagal mengambil screenshot: " + error.message);
+    res.send(image);
+  } catch (err) {
+    console.error("Screenshot Error:", err);
+    res.status(500).send("Gagal mengambil screenshot: " + err.message);
   }
 }
